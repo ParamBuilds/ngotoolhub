@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Copy, Download, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { ReceiptOutput } from "@/components/tools/DocumentOutput";
 
 interface FormData {
   ngoName: string;
@@ -43,9 +44,9 @@ const DonationReceiptTool = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const generateOutput = () => {
+  const generatePlainText = () => {
     if (!formData.ngoName || !formData.donorName || !formData.donationAmount) {
-      return "Please fill in the required fields to generate the receipt.";
+      return "";
     }
 
     const amountInWords = numberToWords(parseInt(formData.donationAmount) || 0);
@@ -56,65 +57,54 @@ const DonationReceiptTool = () => {
     });
 
     return `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                    DONATION RECEIPT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+DONATION RECEIPT
+================
 Receipt No: ${receiptNumber}
 Date: ${formattedDate}
 
 ${formData.ngoName.toUpperCase()}
 ${formData.registrationNumber ? `Registration No: ${formData.registrationNumber}` : ""}
 
-──────────────────────────────────────────────
-
 RECEIVED WITH THANKS FROM:
-
 Donor Name: ${formData.donorName}
 ${formData.donorAddress ? `Address: ${formData.donorAddress}` : ""}
 
-──────────────────────────────────────────────
-
 DONATION DETAILS:
-
 Amount: ₹${parseInt(formData.donationAmount).toLocaleString("en-IN")}
 (Rupees ${amountInWords} Only)
-
 Payment Mode: ${formData.paymentMode}
-${formData.purpose ? `Purpose: ${formData.purpose}` : "Purpose: General Donation"}
+Purpose: ${formData.purpose || "General Donation"}
 
-──────────────────────────────────────────────
-
-This donation is received as per the objects of the
-organization and shall be utilized for the same.
-
-Thank you for your generous contribution!
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 For ${formData.ngoName}
-
 Authorized Signatory
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `.trim();
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(generateOutput());
-    toast.success("Receipt copied to clipboard!");
+    const text = generatePlainText();
+    if (text) {
+      navigator.clipboard.writeText(text);
+      toast.success("Receipt copied to clipboard!");
+    }
   };
+
+  const amountInWords = numberToWords(parseInt(formData.donationAmount) || 0);
+  const formattedDate = new Date(formData.donationDate).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
-          {/* Back Link */}
           <Link to="/tools" className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-6 text-sm">
             <ArrowLeft className="w-4 h-4" />
             Back to All Tools
           </Link>
 
-          {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
               Donation Receipt Generator
@@ -125,7 +115,6 @@ Authorized Signatory
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Form */}
             <div className="form-section">
               <h2 className="font-semibold text-lg mb-6">Enter Details</h2>
               
@@ -223,7 +212,6 @@ Authorized Signatory
               </div>
             </div>
 
-            {/* Output */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-lg">Preview</h2>
@@ -238,9 +226,20 @@ Authorized Signatory
                   </Button>
                 </div>
               </div>
-              <div className="output-preview min-h-[400px] whitespace-pre-wrap">
-                {generateOutput()}
-              </div>
+              
+              <ReceiptOutput
+                ngoName={formData.ngoName}
+                registrationNumber={formData.registrationNumber}
+                donorName={formData.donorName}
+                donorAddress={formData.donorAddress}
+                amount={formData.donationAmount}
+                amountInWords={amountInWords}
+                date={formattedDate}
+                paymentMode={formData.paymentMode}
+                purpose={formData.purpose}
+                receiptNumber={receiptNumber}
+              />
+              
               <p className="text-xs text-muted-foreground mt-3 text-center">
                 Receipt No: {receiptNumber} • Free preview available
               </p>
@@ -253,7 +252,6 @@ Authorized Signatory
   );
 };
 
-// Helper function to convert numbers to words
 function numberToWords(num: number): string {
   if (num === 0) return "Zero";
   

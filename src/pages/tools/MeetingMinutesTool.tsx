@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Copy, Download, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { MeetingOutput } from "@/components/tools/DocumentOutput";
 
 interface FormData {
   ngoName: string;
@@ -44,106 +45,73 @@ const MeetingMinutesTool = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const generateOutput = () => {
+  const formattedDate = new Date(formData.meetingDate).toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  const nextMeetingFormatted = formData.nextMeetingDate 
+    ? new Date(formData.nextMeetingDate).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : undefined;
+
+  const attendeesList = formData.attendees
+    .split("\n")
+    .filter(a => a.trim())
+    .map(a => a.trim());
+
+  const agendaItems = formData.agenda
+    .split("\n")
+    .filter(a => a.trim())
+    .map(a => a.trim());
+
+  const decisions = formData.decisionsTaken
+    .split("\n")
+    .filter(d => d.trim())
+    .map(d => d.trim());
+
+  const generatePlainText = () => {
     if (!formData.ngoName || !formData.meetingDate) {
-      return "Please fill in the required fields to generate the meeting minutes.";
+      return "";
     }
 
-    const formattedDate = new Date(formData.meetingDate).toLocaleDateString("en-IN", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-
-    const nextMeetingFormatted = formData.nextMeetingDate 
-      ? new Date(formData.nextMeetingDate).toLocaleDateString("en-IN", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })
-      : "To be announced";
-
-    const attendeesList = formData.attendees
-      .split("\n")
-      .filter(a => a.trim())
-      .map((a, i) => `   ${i + 1}. ${a.trim()}`)
-      .join("\n") || "   (List not provided)";
-
-    const agendaItems = formData.agenda
-      .split("\n")
-      .filter(a => a.trim())
-      .map((a, i) => `   ${i + 1}. ${a.trim()}`)
-      .join("\n") || "   (Agenda not specified)";
-
-    const decisions = formData.decisionsTaken
-      .split("\n")
-      .filter(d => d.trim())
-      .map((d, i) => `   ${i + 1}. ${d.trim()}`)
-      .join("\n") || "   (Decisions to be recorded)";
-
     return `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                      MINUTES OF MEETING
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Minutes Reference No: ${minutesNumber}
+MINUTES OF MEETING
+==================
+Reference No: ${minutesNumber}
 
 ${formData.ngoName.toUpperCase()}
 
-──────────────────────────────────────────────────────────
-                     MEETING DETAILS
-──────────────────────────────────────────────────────────
+Date: ${formattedDate}
+Time: ${formData.meetingTime}
+Venue: ${formData.venue || "Organization Premises"}
 
-Date     : ${formattedDate}
-Time     : ${formData.meetingTime}
-Venue    : ${formData.venue || "Organization Premises"}
+MEMBERS PRESENT:
+${attendeesList.length > 0 ? attendeesList.map((a, i) => `${i + 1}. ${a}`).join("\n") : "(List not provided)"}
 
-──────────────────────────────────────────────────────────
-                     MEMBERS PRESENT
-──────────────────────────────────────────────────────────
+AGENDA:
+${agendaItems.length > 0 ? agendaItems.map((a, i) => `${i + 1}. ${a}`).join("\n") : "(Agenda not specified)"}
 
-${attendeesList}
+DECISIONS TAKEN:
+${decisions.length > 0 ? decisions.map((d, i) => `${i + 1}. ${d}`).join("\n") : "(Decisions to be recorded)"}
 
-──────────────────────────────────────────────────────────
-                        AGENDA
-──────────────────────────────────────────────────────────
+${formData.closingRemarks ? `CLOSING REMARKS:\n${formData.closingRemarks}` : ""}
 
-${agendaItems}
-
-──────────────────────────────────────────────────────────
-                   DISCUSSIONS & DECISIONS
-──────────────────────────────────────────────────────────
-
-The meeting was called to order and the following decisions
-were taken after due deliberation:
-
-${decisions}
-
-──────────────────────────────────────────────────────────
-                    CLOSING REMARKS
-──────────────────────────────────────────────────────────
-
-${formData.closingRemarks || "There being no other business, the meeting was adjourned with a vote of thanks to the Chair."}
-
-Next Meeting: ${nextMeetingFormatted}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Prepared by:                     Approved by:
-
-_____________________           _____________________
-Secretary                       President/Chairperson
-
-Date: ${new Date().toLocaleDateString("en-IN")}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Next Meeting: ${nextMeetingFormatted || "To be announced"}
 `.trim();
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(generateOutput());
-    toast.success("Meeting minutes copied to clipboard!");
+    const text = generatePlainText();
+    if (text) {
+      navigator.clipboard.writeText(text);
+      toast.success("Meeting minutes copied to clipboard!");
+    }
   };
 
   return (
@@ -151,13 +119,11 @@ Date: ${new Date().toLocaleDateString("en-IN")}
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
-          {/* Back Link */}
           <Link to="/tools" className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-6 text-sm">
             <ArrowLeft className="w-4 h-4" />
             Back to All Tools
           </Link>
 
-          {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
               Meeting Minutes Generator
@@ -168,7 +134,6 @@ Date: ${new Date().toLocaleDateString("en-IN")}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Form */}
             <div className="form-section">
               <h2 className="font-semibold text-lg mb-6">Enter Meeting Details</h2>
               
@@ -271,7 +236,6 @@ Date: ${new Date().toLocaleDateString("en-IN")}
               </div>
             </div>
 
-            {/* Output */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-lg">Preview</h2>
@@ -286,9 +250,20 @@ Date: ${new Date().toLocaleDateString("en-IN")}
                   </Button>
                 </div>
               </div>
-              <div className="output-preview min-h-[500px] whitespace-pre-wrap text-xs">
-                {generateOutput()}
-              </div>
+              
+              <MeetingOutput
+                ngoName={formData.ngoName}
+                meetingDate={formattedDate}
+                meetingTime={formData.meetingTime}
+                venue={formData.venue || "Organization Premises"}
+                attendees={attendeesList}
+                agendaItems={agendaItems}
+                decisions={decisions}
+                closingRemarks={formData.closingRemarks}
+                nextMeetingDate={nextMeetingFormatted}
+                minutesNumber={minutesNumber}
+              />
+              
               <p className="text-xs text-muted-foreground mt-3 text-center">
                 Reference: {minutesNumber} • Free preview available
               </p>
