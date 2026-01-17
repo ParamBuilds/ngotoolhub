@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Copy, Download, ArrowLeft, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { VolunteerOutput } from "@/components/tools/DocumentOutput";
 
 interface FormData {
   volunteerName: string;
@@ -42,63 +43,17 @@ const VolunteerIdTool = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const generateOutput = () => {
-    if (!formData.volunteerName || !formData.ngoName) {
-      return "Please fill in the required fields to generate the ID card details.";
-    }
-
-    const validFrom = new Date(formData.validFrom).toLocaleDateString("en-IN", {
-      month: "short",
-      year: "numeric",
-    });
-    const validTo = new Date(formData.validTo).toLocaleDateString("en-IN", {
-      month: "short",
-      year: "numeric",
-    });
-
-    return `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-           VOLUNTEER IDENTITY CARD
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-${formData.ngoName.toUpperCase()}
-
-─────────────────────────────────────────
-
-         [PHOTO PLACEHOLDER]
-
-─────────────────────────────────────────
-
-ID Number : ${volunteerId}
-
-Name      : ${formData.volunteerName}
-Role      : ${formData.designation}
-
-Valid From: ${validFrom}
-Valid To  : ${validTo}
-
-${formData.bloodGroup ? `Blood Group: ${formData.bloodGroup}` : ""}
-
-─────────────────────────────────────────
-          EMERGENCY CONTACT
-─────────────────────────────────────────
-
-${formData.emergencyContactName || "Contact Person"}: ${formData.emergencyContact || "Not Provided"}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-This card is the property of ${formData.ngoName}.
-If found, please return to the organization.
-
-Authorized Signature: ___________________
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`.trim();
-  };
+  const validFrom = new Date(formData.validFrom).toLocaleDateString("en-IN", {
+    month: "short",
+    year: "numeric",
+  });
+  const validTo = new Date(formData.validTo).toLocaleDateString("en-IN", {
+    month: "short",
+    year: "numeric",
+  });
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(generateOutput());
-    toast.success("ID card details copied to clipboard!");
+    toast.info("Upgrade to Premium to copy ID card details!");
   };
 
   return (
@@ -106,13 +61,11 @@ Authorized Signature: ___________________
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
-          {/* Back Link */}
           <Link to="/tools" className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-6 text-sm">
             <ArrowLeft className="w-4 h-4" />
             Back to All Tools
           </Link>
 
-          {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">
@@ -128,7 +81,6 @@ Authorized Signature: ___________________
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Form */}
             <div className="form-section">
               <h2 className="font-semibold text-lg mb-6">Enter Volunteer Details</h2>
               
@@ -233,7 +185,6 @@ Authorized Signature: ___________________
               </div>
             </div>
 
-            {/* Output */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-lg">Preview</h2>
@@ -248,9 +199,20 @@ Authorized Signature: ___________________
                   </Button>
                 </div>
               </div>
-              <div className="output-preview min-h-[400px] whitespace-pre-wrap relative">
-                <div className="blur-sm select-none">
-                  {generateOutput()}
+              
+              <div className="relative">
+                <div className="blur-sm select-none pointer-events-none">
+                  <VolunteerOutput
+                    volunteerName={formData.volunteerName}
+                    designation={formData.designation}
+                    ngoName={formData.ngoName}
+                    validFrom={validFrom}
+                    validTo={validTo}
+                    bloodGroup={formData.bloodGroup}
+                    emergencyContact={formData.emergencyContact}
+                    emergencyContactName={formData.emergencyContactName}
+                    volunteerId={volunteerId}
+                  />
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="bg-card p-6 rounded-xl border border-border shadow-lg text-center max-w-xs">
@@ -265,6 +227,7 @@ Authorized Signature: ___________________
                   </div>
                 </div>
               </div>
+              
               <p className="text-xs text-muted-foreground mt-3 text-center">
                 ID: {volunteerId} • Premium feature
               </p>

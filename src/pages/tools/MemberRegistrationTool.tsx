@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Copy, Download, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { MemberOutput } from "@/components/tools/DocumentOutput";
 
 interface FormData {
   fullName: string;
@@ -41,77 +42,52 @@ const MemberRegistrationTool = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const generateOutput = () => {
+  const registrationDate = new Date().toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  const dobFormatted = formData.dateOfBirth 
+    ? new Date(formData.dateOfBirth).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : undefined;
+
+  const generatePlainText = () => {
     if (!formData.fullName || !formData.mobileNumber) {
-      return "Please fill in the required fields to generate the membership entry.";
+      return "";
     }
 
-    const registrationDate = new Date().toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-
-    const dobFormatted = formData.dateOfBirth 
-      ? new Date(formData.dateOfBirth).toLocaleDateString("en-IN", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })
-      : "Not Provided";
-
     return `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-              MEMBERSHIP REGISTRATION ENTRY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+MEMBERSHIP REGISTRATION ENTRY
+=============================
 Member ID: ${memberId}
 Registration Date: ${registrationDate}
 
-──────────────────────────────────────────────
-                  PERSONAL DETAILS
-──────────────────────────────────────────────
-
-Full Name          : ${formData.fullName}
+PERSONAL DETAILS:
+Full Name: ${formData.fullName}
 Father/Husband Name: ${formData.fatherHusbandName || "Not Provided"}
-Date of Birth      : ${dobFormatted}
-Mobile Number      : ${formData.mobileNumber}
+Date of Birth: ${dobFormatted || "Not Provided"}
+Mobile Number: ${formData.mobileNumber}
 
-──────────────────────────────────────────────
-                    ADDRESS
-──────────────────────────────────────────────
-
+ADDRESS:
 ${formData.address || "Not Provided"}
 
-──────────────────────────────────────────────
-               IDENTIFICATION & TYPE
-──────────────────────────────────────────────
-
-Aadhaar/ID Number  : ${formData.aadhaarNumber ? formData.aadhaarNumber.replace(/(\d{4})(\d{4})(\d{4})/, "$1-$2-$3") : "Not Provided"}
-Membership Type    : ${formData.membershipType}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-I hereby declare that the above information is true
-and correct to the best of my knowledge. I agree to
-abide by the rules and regulations of the organization.
-
-
-_____________________          _________________
-Member's Signature              Date
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        For Office Use Only
-
-Verified By: ________________    Date: __________
-Approved By: ________________    Date: __________
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IDENTIFICATION & TYPE:
+Aadhaar/ID Number: ${formData.aadhaarNumber || "Not Provided"}
+Membership Type: ${formData.membershipType}
 `.trim();
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(generateOutput());
-    toast.success("Member entry copied to clipboard!");
+    const text = generatePlainText();
+    if (text) {
+      navigator.clipboard.writeText(text);
+      toast.success("Member entry copied to clipboard!");
+    }
   };
 
   return (
@@ -119,13 +95,11 @@ Approved By: ________________    Date: __________
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
-          {/* Back Link */}
           <Link to="/tools" className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-6 text-sm">
             <ArrowLeft className="w-4 h-4" />
             Back to All Tools
           </Link>
 
-          {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
               Member Registration Formatter
@@ -136,7 +110,6 @@ Approved By: ________________    Date: __________
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Form */}
             <div className="form-section">
               <h2 className="font-semibold text-lg mb-6">Enter Member Details</h2>
               
@@ -222,7 +195,6 @@ Approved By: ________________    Date: __________
               </div>
             </div>
 
-            {/* Output */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-lg">Preview</h2>
@@ -237,9 +209,19 @@ Approved By: ________________    Date: __________
                   </Button>
                 </div>
               </div>
-              <div className="output-preview min-h-[400px] whitespace-pre-wrap">
-                {generateOutput()}
-              </div>
+              
+              <MemberOutput
+                fullName={formData.fullName}
+                fatherHusbandName={formData.fatherHusbandName}
+                dateOfBirth={dobFormatted}
+                mobileNumber={formData.mobileNumber}
+                address={formData.address}
+                aadhaarNumber={formData.aadhaarNumber}
+                membershipType={formData.membershipType}
+                memberId={memberId}
+                registrationDate={registrationDate}
+              />
+              
               <p className="text-xs text-muted-foreground mt-3 text-center">
                 Member ID: {memberId} • Free preview available
               </p>

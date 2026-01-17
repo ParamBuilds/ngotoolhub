@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Copy, Download, ArrowLeft, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { ResolutionOutput } from "@/components/tools/DocumentOutput";
 
 interface FormData {
   ngoName: string;
@@ -44,81 +45,49 @@ const ResolutionTool = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const generateOutput = () => {
+  const formattedDate = new Date(formData.resolutionDate).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  const generatePlainText = () => {
     if (!formData.ngoName || !formData.resolutionSubject) {
-      return "Please fill in the required fields to generate the resolution.";
+      return "";
     }
 
-    const formattedDate = new Date(formData.resolutionDate).toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-
     return `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                    CERTIFIED RESOLUTION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+CERTIFIED RESOLUTION
+====================
 Resolution Number: ${resolutionNumber}
 Date: ${formattedDate}
 
 ${formData.ngoName.toUpperCase()}
 ${formData.registrationNumber ? `(Registration No: ${formData.registrationNumber})` : ""}
 
-──────────────────────────────────────────────────────────
-                    SUBJECT
-──────────────────────────────────────────────────────────
-
-${formData.resolutionSubject}
-
-──────────────────────────────────────────────────────────
-                    RESOLUTION
-──────────────────────────────────────────────────────────
+SUBJECT: ${formData.resolutionSubject}
 
 RESOLVED THAT:
+${formData.resolutionDetails || "The resolution details to be recorded here."}
 
-${formData.resolutionDetails || "The resolution details to be recorded here as per the decisions taken in the meeting of the Governing Body / Executive Committee."}
+VOTING RECORD:
+Proposed by: ${formData.proposedBy || "___________________"}
+Seconded by: ${formData.secondedBy || "___________________"}
 
-──────────────────────────────────────────────────────────
-                    VOTING RECORD
-──────────────────────────────────────────────────────────
+The resolution was passed UNANIMOUSLY.
 
-The above resolution was:
-
-Proposed by : ${formData.proposedBy || "___________________"}
-Seconded by : ${formData.secondedBy || "___________________"}
-
-The resolution was passed UNANIMOUSLY by all members present
-at the meeting held on ${formattedDate}.
-
-──────────────────────────────────────────────────────────
-                    CERTIFICATION
-──────────────────────────────────────────────────────────
-
-I hereby certify that the above is a true and correct copy
-of the resolution passed at the duly convened meeting of
-${formData.ngoName}.
-
-
-_____________________________
+CERTIFICATION:
 ${formData.authorityName || "(Name of Authorized Signatory)"}
 ${formData.authorityDesignation}
-
-Date: ${formattedDate}
-Place: ___________________
-
-[SEAL OF THE ORGANIZATION]
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-               EXTRACT FROM RESOLUTION REGISTER
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `.trim();
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(generateOutput());
-    toast.success("Resolution copied to clipboard!");
+    const text = generatePlainText();
+    if (text) {
+      navigator.clipboard.writeText(text);
+      toast.success("Resolution copied to clipboard!");
+    }
   };
 
   return (
@@ -126,13 +95,11 @@ Place: ___________________
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
-          {/* Back Link */}
           <Link to="/tools" className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-6 text-sm">
             <ArrowLeft className="w-4 h-4" />
             Back to All Tools
           </Link>
 
-          {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">
@@ -148,7 +115,6 @@ Place: ___________________
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Form */}
             <div className="form-section">
               <h2 className="font-semibold text-lg mb-6">Enter Resolution Details</h2>
               
@@ -250,7 +216,6 @@ Place: ___________________
               </div>
             </div>
 
-            {/* Output */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-lg">Preview</h2>
@@ -265,9 +230,20 @@ Place: ___________________
                   </Button>
                 </div>
               </div>
-              <div className="output-preview min-h-[500px] whitespace-pre-wrap text-xs">
-                {generateOutput()}
-              </div>
+              
+              <ResolutionOutput
+                ngoName={formData.ngoName}
+                registrationNumber={formData.registrationNumber}
+                resolutionSubject={formData.resolutionSubject}
+                resolutionDate={formattedDate}
+                resolutionDetails={formData.resolutionDetails}
+                proposedBy={formData.proposedBy}
+                secondedBy={formData.secondedBy}
+                authorityName={formData.authorityName}
+                authorityDesignation={formData.authorityDesignation}
+                resolutionNumber={resolutionNumber}
+              />
+              
               <p className="text-xs text-muted-foreground mt-3 text-center">
                 Resolution: {resolutionNumber} • Copy free, PDF download premium
               </p>
